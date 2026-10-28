@@ -1,6 +1,6 @@
 {
   "name": "amazon-business-analyst",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "面向亚马逊卖家的通用数据分析 skill：根据业务问题选择分析方法、核对指标口径，输出含图表与行动建议的 PDF 报告。支持经营、广告、利润、库存、市场、竞品与评论分析。",
   "author": {
     "name": "sumomowynaut",
