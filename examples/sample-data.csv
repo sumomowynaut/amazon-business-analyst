@@ -1,0 +1,5 @@
+period,start_date,end_date,marketplace,currency,sku,sessions,units,orders,sales,ad_spend,ad_sales,clicks,impressions,cogs,selling_fees,fulfillment_fees,other_variable_costs
+baseline,2026-09-01,2026-09-14,US,USD,DEMO-A,3000,300,270,12000,1800,6000,900,45000,3600,1800,1800,600
+baseline,2026-09-01,2026-09-14,US,USD,DEMO-B,2000,200,180,8000,800,3200,400,20000,2400,1200,1200,400
+current,2026-09-15,2026-09-28,US,USD,DEMO-A,2500,225,210,9000,2100,4500,840,42000,2700,1350,1350,450
+current,2026-09-15,2026-09-28,US,USD,DEMO-B,2400,240,215,9600,960,3840,480,24000,2880,1440,1440,480

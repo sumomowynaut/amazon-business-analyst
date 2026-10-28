@@ -1,0 +1,4 @@
+interface:
+  display_name: "亚马逊商业分析师"
+  short_description: "根据用户提供的亚马逊数据回答业务问题，交付含图表与行动建议的分析报告"
+  default_prompt: "使用 $amazon-business-analyst 分析我提供的亚马逊数据，根据业务问题选择分析方法，并生成包含证据、图表和行动建议的 PDF 报告。"
