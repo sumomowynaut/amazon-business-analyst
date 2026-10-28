@@ -34,6 +34,8 @@
 
 `references/scenario-questions.md` 覆盖经营诊断、广告效率、利润成本、库存补货、选品新品、竞品关键词、评论 Listing、促销复盘八类场景，每类写明必须确认什么、通常不必问什么、最常见的误判是什么。它给的是追问的方向，不是固定模块——具体分析什么仍由你的问题决定。
 
+`references/domain-knowledge.md` 写的是业务机制层面的判断原则：销量与排名互为因果、归因不是增量、变体结构会伪装成销量变化、断货期销量不代表需求、促销改变价格锚点、费用是层叠的、三类广告不能混算、评论有滞后、季节性不均匀、估算数据不是实测、不同商品阶段没有共同标准。每条按「机制 → 陷阱 → 原则」组织，用来决定哪些结论不能说。
+
 ## 安装
 
 把整个目录放进你的 skill 目录即可，目录名保持 `amazon-business-analyst`。
@@ -99,6 +101,7 @@ amazon-business-analyst/
 ├── agents/openai.yaml              # Codex 展示信息（可选）
 ├── references/
 │   ├── scenario-questions.md       # 八类场景的必须追问清单
+│   ├── domain-knowledge.md         # 业务机制与常见分析陷阱
 │   ├── data-guide.md               # 报表识别、字段映射、合并去重
 │   ├── metrics.md                  # 指标定义与计算条件
 │   ├── analysis-principles.md      # 证据层级、样本、反证
