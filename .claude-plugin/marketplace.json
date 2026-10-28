@@ -1,0 +1,16 @@
+{
+  "name": "amazon-business-analyst",
+  "owner": {
+    "name": "sumomowynaut",
+    "url": "https://github.com/sumomowynaut"
+  },
+  "plugins": [
+    {
+      "name": "amazon-business-analyst",
+      "source": "./",
+      "description": "面向亚马逊卖家的通用数据分析 skill：根据业务问题选择分析方法、核对指标口径，输出含图表与行动建议的 PDF 报告。",
+      "category": "analysis",
+      "tags": ["amazon", "business-analyst", "data-analysis", "acos", "pdf-report"]
+    }
+  ]
+}

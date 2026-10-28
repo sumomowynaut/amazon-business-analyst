@@ -48,11 +48,14 @@ git clone https://github.com/sumomowynaut/amazon-business-analyst ~/.claude/skil
 git clone https://github.com/sumomowynaut/amazon-business-analyst .claude/skills/amazon-business-analyst
 ```
 
-作为插件安装（仓库已带 `.claude-plugin/plugin.json`）：
+作为插件安装（仓库同时提供 `.claude-plugin/plugin.json` 与 `.claude-plugin/marketplace.json`）。插件必须先加入 marketplace 再按名字安装，不能直接安装仓库地址：
 
 ```bash
-claude plugin install sumomowynaut/amazon-business-analyst
+claude plugin marketplace add sumomowynaut/amazon-business-analyst
+claude plugin install amazon-business-analyst@amazon-business-analyst
 ```
+
+会话内也可以用 `/plugin marketplace add sumomowynaut/amazon-business-analyst`，再用 `/plugin install amazon-business-analyst@amazon-business-analyst`。
 
 **Codex**：放到 `~/.codex/skills/`（个人级），或仓库内的 `.agents/skills/`（随仓库生效，Codex 会从当前目录向上扫描每一级的 `.agents/skills`）。`agents/openai.yaml` 提供客户端展示名称与默认提示，缺失不影响 skill 本身。
 
