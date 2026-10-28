@@ -34,10 +34,10 @@
 
 ```bash
 # 用户级（对所有项目生效）
-git clone https://github.com/<owner>/amazon-business-analyst ~/.claude/skills/amazon-business-analyst
+git clone https://github.com/sumomowynaut/amazon-business-analyst ~/.claude/skills/amazon-business-analyst
 
 # 项目级
-git clone https://github.com/<owner>/amazon-business-analyst .claude/skills/amazon-business-analyst
+git clone https://github.com/sumomowynaut/amazon-business-analyst .claude/skills/amazon-business-analyst
 ```
 
 Codex 用户放到 `~/.codex/skills/` 或仓库内的 `.agents/skills/`。skill 只依赖 Markdown 文件；`agents/openai.yaml` 仅用于客户端展示名称与默认提示，缺失不影响使用。
