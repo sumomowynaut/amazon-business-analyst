@@ -62,6 +62,10 @@ description: 根据用户提供的亚马逊业务数据开展决策分析，处�
 
 默认输出包含图表的 PDF。可使用当前环境可用的渲染能力，或使用本项目的 `scripts/render_report.py`；具体格式、依赖与检查方法见 [pdf-rendering.md](references/pdf-rendering.md)。脚本只负责呈现已经核对的分析，不自动推断业务原因。
 
+报告语言默认与用户一致。使用 `render_report.py` 时由报告 JSON 的 `lang` 字段决定页眉、摘要标题等固定标签的语言（`zh` 或 `en`），未指定时按正文内容推断，避免中文标题出现在英文报告里。
+
+撰写正文前读取 [writing-style.md](references/writing-style.md)，按其中的结构要求和措辞禁忌检查一遍，尤其是指标名保留原写法、中文与数字紧贴、缺失值不写零。
+
 数据不足时交付有边界的结果，注明哪些问题仍无法回答及最少需要补充什么。不能生成 PDF 时说明具体依赖问题，保留分析内容并交付可用的替代格式，不将替代文件称为 PDF。
 
 交付前核对核心数字能否追溯到文件、工作表、字段与筛选范围；图表数值与正文一致；逐页检查中文、表格、分页及标签是否完整。
@@ -75,6 +79,7 @@ description: 根据用户提供的亚马逊业务数据开展决策分析，处�
 | 检查结论和建议是否成立 | [分析纪律](references/analysis-principles.md) |
 | 为问题选择分析方法 | [分析方法](references/analysis-methods.md) |
 | 组织正式交付 | [报告规范](references/report-guide.md) |
+| 措辞、中英混排与数字表达 | [文字规范](references/writing-style.md) |
 | 生成、修复和检查 PDF | [PDF 输出](references/pdf-rendering.md) |
 | 参考完整任务与分析尺度 | [分析示例](references/report-examples.md) |
 

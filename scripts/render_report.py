@@ -12,9 +12,8 @@ import os
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from reportlab.graphics.shapes import Drawing, Line, Rect
+from reportlab.graphics.shapes import Drawing, Line, PolyLine, Rect, String
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -50,6 +49,8 @@ def validate_report(report):
     require_text(report.get("title"), "title")
     if "subtitle" in report:
         require_text(report["subtitle"], "subtitle")
+    if "lang" in report and report["lang"] not in LABELS:
+        raise ValueError(f"lang must be one of {sorted(LABELS)}")
     for key in ("summary", "sources"):
         if key in report:
             require_list(report[key], key)
@@ -106,6 +107,11 @@ def validate_report(report):
                 if (isinstance(value, bool) or not isinstance(value, (int, float))
                         or not math.isfinite(value)):
                     raise ValueError("Chart values must be finite numbers, not missing values")
+            kind = chart.get("kind", "bar")
+            if kind not in ("bar", "line"):
+                raise ValueError("chart.kind must be 'bar' or 'line'")
+            if kind == "line" and len(labels) < 2:
+                raise ValueError("A line chart needs at least two points")
         if "image" in section:
             image = section["image"]
             if not isinstance(image, dict):
@@ -157,6 +163,27 @@ def pick(styles, value, latin_key, cjk_key):
     return styles[latin_key] if not has_cjk(value) else styles[cjk_key]
 
 
+LABELS = {
+    "zh": {"summary": "决策摘要", "sources": "数据与计算说明",
+           "source_prefix": "来源：", "page": "第 {n} 页"},
+    "en": {"summary": "Decision summary", "sources": "Data and method notes",
+           "source_prefix": "Source: ", "page": "Page {n}"},
+}
+
+
+def resolve_lang(report):
+    """Explicit `lang` wins; otherwise infer from the report's own text."""
+    declared = report.get("lang")
+    if declared is not None:
+        if declared not in LABELS:
+            raise ValueError(f"lang must be one of {sorted(LABELS)}")
+        return declared
+    probe = [report.get("title", ""), report.get("subtitle", "")]
+    probe += report.get("summary", [])
+    probe += [section.get("title", "") for section in report["sections"]]
+    return "zh" if has_cjk("".join(str(p) for p in probe)) else "en"
+
+
 def make_styles():
     base = dict(fontName=FONT, textColor=INK, wordWrap="CJK", leading=17)
     return {
@@ -204,7 +231,13 @@ def make_table(table, styles):
     return result
 
 
-def make_chart(chart, styles):
+def chart_heading(chart):
+    """Unit in CJK parentheses only when the title itself is CJK."""
+    return chart["title"] + ("（" + chart["unit"] + "）" if has_cjk(chart["title"])
+                             else " (" + chart["unit"] + ")")
+
+
+def make_bar_chart(chart, styles):
     low = min(0, *chart["values"])
     high = max(0, *chart["values"])
     span = high - low or 1
@@ -226,13 +259,72 @@ def make_chart(chart, styles):
         ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]))
-    # Keep only caption with the first row; allow longer charts to continue on another page.
-    return [para(chart["title"] + "（" + chart["unit"] + "）", styles["body"]),
-            table, para("来源：" + chart["source"], styles["small"])]
+    return [para(chart_heading(chart), styles["body"]), table]
+
+
+def make_line_chart(chart, styles):
+    """Single-series line chart with labelled axes and value markers."""
+    values, labels = chart["values"], chart["labels"]
+    # Keep the decimals the data actually carries; do not round 28.26 to 28.
+    decimals = 0 if all(float(v).is_integer() for v in values) else 1
+    low, high = min(values), max(values)
+    if low == high:
+        low, high = low - 1, high + 1
+    padding = (high - low) * 0.12
+    low, high = low - padding, high + padding
+    span = high - low
+
+    plot_w, plot_h = WIDTH, 68 * mm
+    left, right, top, bottom = 14 * mm, 6 * mm, 6 * mm, 11 * mm
+    inner_w, inner_h = plot_w - left - right, plot_h - top - bottom
+
+    def x_at(index):
+        return left + (inner_w * index / (len(values) - 1))
+
+    def y_at(value):
+        return bottom + (value - low) / span * inner_h
+
+    drawing = Drawing(plot_w, plot_h)
+    # Horizontal grid plus a zero baseline when the series crosses zero.
+    for frac in (0, 0.25, 0.5, 0.75, 1):
+        y = bottom + inner_h * frac
+        value = low + span * frac
+        drawing.add(Line(left, y, plot_w - right, y,
+                         strokeColor=colors.HexColor("#DCE6EC") if frac not in (0, 1) else MUTED,
+                         strokeWidth=0.5))
+        drawing.add(String(left - 2 * mm, y - 2.5, f"{value:,.{decimals}f}", fontName=FONT,
+                           fontSize=7, fillColor=MUTED, textAnchor="end"))
+    if low < 0 < high:
+        drawing.add(Line(left, y_at(0), plot_w - right, y_at(0), strokeColor=MUTED, strokeWidth=0.8))
+
+    points = [(x_at(i), y_at(v)) for i, v in enumerate(values)]
+    drawing.add(PolyLine(points, strokeColor=TEAL, strokeWidth=1.6))
+    for (x, y), value in zip(points, values):
+        drawing.add(Rect(x - 1.6, y - 1.6, 3.2, 3.2, fillColor=TEAL, strokeColor=colors.white,
+                         strokeWidth=0.6))
+        drawing.add(String(x, y + 4, f"{value:,.{decimals}f}", fontName=FONT, fontSize=7,
+                           fillColor=INK, textAnchor="middle"))
+
+    # Label every point when the series is short, otherwise thin the labels out.
+    stride = 1 if len(labels) <= 8 else max(1, len(labels) // 6)
+    for i, label in enumerate(labels):
+        if i % stride == 0 or i == len(labels) - 1:
+            drawing.add(String(x_at(i), 2, label, fontName=FONT, fontSize=7,
+                               fillColor=MUTED, textAnchor="middle"))
+    return [para(chart_heading(chart), styles["body"]), drawing]
+
+
+def make_chart(chart, styles, lang="zh"):
+    builder = make_line_chart if chart.get("kind") == "line" else make_bar_chart
+    parts = builder(chart, styles)
+    parts.append(para(LABELS[lang]["source_prefix"] + chart["source"], styles["small"]))
+    return parts
 
 
 def render_report(report, output, font=None, base_dir=None):
     validate_report(report)
+    lang = resolve_lang(report)
+    labels = LABELS[lang]
     select_font(font)
     styles = make_styles()
     base_dir = Path(base_dir or ".").resolve()
@@ -251,7 +343,7 @@ def render_report(report, output, font=None, base_dir=None):
     if report.get("subtitle"):
         story.append(para(report["subtitle"], styles["subtitle"]))
     if report.get("summary"):
-        story.append(para("决策摘要", styles["h1"]))
+        story.append(para(labels["summary"], styles["h1"]))
         story += [para(f"{i}. {text}", styles["body"])
                   for i, text in enumerate(report["summary"], 1)]
     for index, section in enumerate(report["sections"]):
@@ -264,17 +356,17 @@ def render_report(report, output, font=None, base_dir=None):
         if "table" in section:
             story.extend([make_table(section["table"], styles), Spacer(1, 10)])
         if "chart" in section:
-            story.extend(make_chart(section["chart"], styles))
+            story.extend(make_chart(section["chart"], styles, lang))
         if "image" in section:
             im = Image(str(images[index]))
             ratio = min(WIDTH / im.imageWidth, 155 * mm / im.imageHeight, 1)
             im.drawWidth, im.drawHeight = im.imageWidth * ratio, im.imageHeight * ratio
             story.append(KeepTogether([
                 im, para(section["image"]["caption"], styles["small"]),
-                para("来源：" + section["image"]["source"], styles["small"]),
+                para(labels["source_prefix"] + section["image"]["source"], styles["small"]),
             ]))
     if report.get("sources"):
-        story.append(para("数据与计算说明", styles["h1"]))
+        story.append(para(labels["sources"], styles["h1"]))
         story += [para(text, styles["small"]) for text in report["sources"]]
 
     def decorate(canvas, doc):
@@ -284,7 +376,7 @@ def render_report(report, output, font=None, base_dir=None):
         canvas.setFillColor(MUTED)
         canvas.setFont(FONT, 8)
         canvas.drawString(18 * mm, 12 * mm, "Amazon Business Analyst")
-        canvas.drawRightString(A4[0] - 18 * mm, 12 * mm, f"第 {doc.page} 页")
+        canvas.drawRightString(A4[0] - 18 * mm, 12 * mm, labels["page"].format(n=doc.page))
         canvas.restoreState()
 
     output.parent.mkdir(parents=True, exist_ok=True)

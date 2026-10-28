@@ -94,6 +94,29 @@ class ValidationTests(unittest.TestCase):
         broken["sections"][0]["page_break"] = "yes"
         self.assert_rejected(broken, "page_break string")
 
+    def test_unknown_lang_rejected(self):
+        self.assert_rejected(variant(lang="fr"), "unsupported lang")
+
+    def test_chart_kind_validated(self):
+        for bad in ("pie", "scatter", 1):
+            broken = copy.deepcopy(BASE)
+            broken["sections"][0]["chart"]["kind"] = bad
+            self.assert_rejected(broken, f"kind {bad!r}")
+
+    def test_line_chart_needs_two_points(self):
+        broken = copy.deepcopy(BASE)
+        broken["sections"][0]["chart"] = {"kind": "line", "title": "趋势", "unit": "USD",
+                                          "labels": ["仅一期"], "values": [1.0], "source": "x"}
+        self.assert_rejected(broken, "single point line chart")
+
+    def test_lang_inferred_from_content(self):
+        from render_report import resolve_lang
+        self.assertEqual(resolve_lang(BASE), "zh")
+        english = {"title": "Advertising Review", "summary": ["ACOS rose."],
+                   "sections": [{"title": "Key metrics"}]}
+        self.assertEqual(resolve_lang(english), "en")
+        self.assertEqual(resolve_lang({**english, "lang": "zh"}), "zh")
+
 
 class RenderTests(unittest.TestCase):
     @classmethod
@@ -128,6 +151,40 @@ class RenderTests(unittest.TestCase):
         text = "".join(page.extract_text() or "" for page in reader.pages)
         self.assertIn("测试报告", text)
         self.assertIn("ACOS", text)
+
+    def test_english_report_has_no_chinese_labels(self):
+        import pypdf
+        english = {
+            "title": "Advertising Review",
+            "summary": ["ACOS rose from 28.26% to 36.69%."],
+            "sections": [
+                {"title": "Weekly trend",
+                 "chart": {"kind": "line", "title": "Weekly ACOS", "unit": "%",
+                           "labels": ["W1", "W2", "W3"], "values": [28.3, 32.5, 36.7],
+                           "source": "weekly export"}},
+            ],
+            "sources": ["Source: synthetic."],
+        }
+        self.render(english)
+        reader = pypdf.PdfReader(str(self.out))
+        text = "".join(page.extract_text() or "" for page in reader.pages)
+        self.assertIn("Decision summary", text)
+        self.assertIn("Page 1", text)
+        for label in ("决策摘要", "数据与计算说明", "来源："):
+            self.assertNotIn(label, text, f"Chinese label leaked into English report: {label}")
+
+    def test_line_chart_renders(self):
+        import pypdf
+        report = copy.deepcopy(BASE)
+        report["sections"][0]["chart"] = {
+            "kind": "line", "title": "Weekly ACOS", "unit": "%",
+            "labels": ["W1", "W2", "W3", "W4"], "values": [28.3, 30.1, 33.8, 36.7],
+            "source": "weekly export",
+        }
+        self.render(report)
+        reader = pypdf.PdfReader(str(self.out))
+        text = "".join(page.extract_text() or "" for page in reader.pages)
+        self.assertIn("36.7", text)
 
     def test_failure_leaves_no_partial_file(self):
         target = Path(self.tmp.name) / "missing-image.pdf"

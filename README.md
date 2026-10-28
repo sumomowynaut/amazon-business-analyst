@@ -4,6 +4,10 @@
 
 不绑定任何平台、账号或第三方工具。经营、广告、利润、库存、市场、竞品、评论都可以问，具体分析什么由你的问题和手头数据决定。
 
+<img src="assets/preview-summary.png" alt="报告首页：决策摘要与分析范围" width="46%"> <img src="assets/preview-chart.png" alt="报告内页：各商品对销售额变化的贡献" width="46%">
+
+上图为 `examples/sample-report.pdf` 的实际页面，数据为模拟。
+
 ## 它解决什么问题
 
 亚马逊数据最常见的坑不是不会算，而是算错了却看起来很正常：
@@ -40,7 +44,15 @@ git clone https://github.com/sumomowynaut/amazon-business-analyst ~/.claude/skil
 git clone https://github.com/sumomowynaut/amazon-business-analyst .claude/skills/amazon-business-analyst
 ```
 
-Codex 用户放到 `~/.codex/skills/` 或仓库内的 `.agents/skills/`。skill 只依赖 Markdown 文件；`agents/openai.yaml` 仅用于客户端展示名称与默认提示，缺失不影响使用。
+作为插件安装（仓库已带 `.claude-plugin/plugin.json`）：
+
+```bash
+claude plugin install sumomowynaut/amazon-business-analyst
+```
+
+**Codex**：放到 `~/.codex/skills/`（个人级），或仓库内的 `.agents/skills/`（随仓库生效，Codex 会从当前目录向上扫描每一级的 `.agents/skills`）。`agents/openai.yaml` 提供客户端展示名称与默认提示，缺失不影响 skill 本身。
+
+**其他 Agent**：skill 的主体是 Markdown。把 `SKILL.md` 与按需读取的 `references/*.md` 拼进 system prompt 即可，`scripts/` 只在需要生成 PDF 时使用。
 
 ## 生成 PDF
 
@@ -53,7 +65,7 @@ python scripts/render_report.py report.json report.pdf
 
 字体默认从系统路径查找（Windows 微软雅黑／等线／黑体／宋体、macOS 苹方、Linux 文泉驿），也可以用 `--font /path/to/font.ttc` 或环境变量 `AMAZON_ANALYST_FONT` 指定。仓库不分发字体。
 
-脚本只负责排版，不计算指标、不推断原因。JSON 结构和排版约定见 [references/pdf-rendering.md](references/pdf-rendering.md)。
+脚本只负责排版，不计算指标、不推断原因。内置条形图与折线图；直方图、箱线图、散点图需先导出 PNG 再作为 `image` 插入。JSON 结构、`lang` 与 `kind` 字段和排版约定见 [references/pdf-rendering.md](references/pdf-rendering.md)。
 
 ## 示例
 
@@ -72,20 +84,24 @@ python -m pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 
-覆盖报告结构校验（缺字段、表格列数不匹配、`NaN`／`null`、远程图片）、PDF 生成后可检索、渲染失败不留下半成品，以及示例数据汇总与口径重算。`tests/behavior-cases.md` 是人工验收用例，列出每类任务应当出现和不应出现的判断。
+覆盖报告结构校验（缺字段、表格列数不匹配、`NaN`／`null`、远程图片、`lang` 与 `chart.kind` 取值）、英文报告不混入中文标签、折线图渲染、PDF 生成后可检索、渲染失败不留下半成品，以及示例数据汇总与口径重算。`tests/behavior-cases.md` 是人工验收用例，列出每类任务应当出现和不应出现的判断。
+
+推送时 GitHub Actions 会自动运行同一套测试（见 `.github/workflows/tests.yml`）。
 
 ## 目录结构
 
 ```text
 amazon-business-analyst/
 ├── SKILL.md                        # 主流程与规则
-├── agents/openai.yaml              # 客户端展示信息（可选）
+├── .claude-plugin/plugin.json      # 插件清单（可选安装方式）
+├── agents/openai.yaml              # Codex 展示信息（可选）
 ├── references/
 │   ├── data-guide.md               # 报表识别、字段映射、合并去重
 │   ├── metrics.md                  # 指标定义与计算条件
 │   ├── analysis-principles.md      # 证据层级、样本、反证
 │   ├── analysis-methods.md         # 按问题选择方法
 │   ├── report-guide.md             # 报告结构与图表规范
+│   ├── writing-style.md            # 措辞、中英混排、数字表达
 │   ├── report-examples.md          # 判断示例
 │   └── pdf-rendering.md            # PDF 依赖、JSON 结构与检查
 ├── scripts/
@@ -93,8 +109,10 @@ amazon-business-analyst/
 │   └── build_example.py            # 重建示例报告
 ├── examples/
 │   ├── brief.md                    # 示例任务与字段定义
-│   └── sample-data.csv             # 模拟数据
-└── tests/                          # 结构与渲染检查
+│   ├── sample-data.csv             # 模拟数据
+│   └── sample-report.pdf           # 生成好的示例报告
+├── assets/                         # README 预览图
+└── tests/                          # 自动测试与人工验收用例
 ```
 
 SKILL.md 只放每次分析都需要的流程；细节知识按任务读取，避免把全部参考资料塞进上下文。
