@@ -23,6 +23,8 @@ description: 根据用户提供的亚马逊业务数据开展决策分析，处�
 
 用户只提供文件时，可以先查看工作表名称、表头、少量示例行和时间覆盖，帮助提出具体问题；这一步只识别数据，不提前宣称业务原因。业务问题已清楚时直接推进。
 
+确认问题后，读取 [scenario-questions.md](references/scenario-questions.md) 找到对应场景的「必须确认」清单，一次问完。能从文件或用户已给出的说明中确认的不要重复问；答案不影响结论的问题直接跳过。
+
 分析前用简短表述确定：要回答什么、比较什么、哪些变化可能影响判断。对可以从文件确认的信息，不再要求用户手工填写。
 
 ### 2. 选择判断路径
@@ -58,7 +60,7 @@ description: 根据用户提供的亚马逊业务数据开展决策分析，处�
 
 ### 5. 组织并交付报告
 
-按 [report-guide.md](references/report-guide.md) 组织内容。首页给出问题、结论和优先行动，分析章节围绕用户问题安排，末尾说明数据来源、口径和限制。
+按 [report-guide.md](references/report-guide.md) 组织内容。首页给出问题、结论和优先行动，随后列出待检验的解释及其状态，分析章节围绕用户问题安排，末尾说明数据来源、口径和限制。
 
 默认输出包含图表的 PDF。可使用当前环境可用的渲染能力，或使用本项目的 `scripts/render_report.py`；具体格式、依赖与检查方法见 [pdf-rendering.md](references/pdf-rendering.md)。脚本只负责呈现已经核对的分析，不自动推断业务原因。
 
@@ -74,6 +76,7 @@ description: 根据用户提供的亚马逊业务数据开展决策分析，处�
 
 | 当前需要 | 读取内容 |
 | --- | --- |
+| 确认某场景缺哪些背景信息 | [场景追问](references/scenario-questions.md) |
 | 识别文件、统一字段、合并报表 | [数据指南](references/data-guide.md) |
 | 定义指标或解释计算差异 | [指标口径](references/metrics.md) |
 | 检查结论和建议是否成立 | [分析纪律](references/analysis-principles.md) |
